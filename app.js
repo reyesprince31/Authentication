@@ -28,9 +28,11 @@ app.get("/register", (req, res) => {
 
 // Register a new user
 app.post("/register", async (req, res) => {
+  const { username, password } = req.body;
+
   const newUser = new User({
-    email: req.body.username,
-    password: req.body.password,
+    email: username,
+    password: password,
   });
 
   const checkUser = await User.findOne({ email: req.body.username });
