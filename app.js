@@ -21,7 +21,9 @@ app.get("/login", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  res.render("register");
+  res.render("register", {
+    message: "Enter New User",
+  });
 });
 
 // Register a new user
@@ -35,7 +37,7 @@ app.post("/register", async (req, res) => {
 
   if (checkUser) {
     res.render("register", {
-      error: "Email is already in use",
+      message: "Email is already in use",
     });
   } else {
     await newUser.save();
