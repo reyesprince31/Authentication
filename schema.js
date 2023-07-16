@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import encrypt from "mongoose-encryption";
+// import encrypt from "mongoose-encryption";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -13,10 +13,10 @@ const UserSchema = new mongoose.Schema({
   password: { type: String, required: true },
 });
 
-UserSchema.plugin(encrypt, {
-  secret: SECRET,
-  encryptedFields: ["password"],
-});
+// UserSchema.plugin(encrypt, {
+//   secret: SECRET,
+//   encryptedFields: ["password"],
+// });
 
 const User = mongoose.model("User", UserSchema);
 

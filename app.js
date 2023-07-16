@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 dotenv.config();
 import { User } from "./schema.js";
+import md5 from "md5";
 
 const PORT = process.env.PORT;
 const app = express();
@@ -32,7 +33,7 @@ app.post("/register", async (req, res) => {
 
   const newUser = new User({
     email: username,
-    password: password,
+    password: md5(password),
   });
 
   const checkUser = await User.findOne({ email: req.body.username });
@@ -52,7 +53,7 @@ app.post("/login", async (req, res) => {
   const { username, password } = req.body;
   const userAccess = await User.findOne({ email: username });
 
-  if (userAccess && userAccess.password === password) {
+  if (userAccess && userAccess.password === md5(password)) {
     res.render("secrets");
   } else {
     console.log("No match found");
