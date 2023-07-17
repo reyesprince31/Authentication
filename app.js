@@ -1,8 +1,8 @@
 import express from "express";
 import dotenv from "dotenv";
 dotenv.config();
-import { User } from "./schema.js";
-import md5 from "md5";
+
+import { register, login } from "./routes.js";
 
 const PORT = process.env.PORT;
 const app = express();
@@ -27,38 +27,9 @@ app.get("/register", (req, res) => {
   });
 });
 
-// Register a new user
-app.post("/register", async (req, res) => {
-  const { username, password } = req.body;
+app.post("/register", register);
 
-  const newUser = new User({
-    email: username,
-    password: md5(password),
-  });
-
-  const checkUser = await User.findOne({ email: req.body.username });
-
-  if (checkUser) {
-    res.render("register", {
-      message: "Email is already in use",
-    });
-  } else {
-    await newUser.save();
-    res.render("secrets");
-  }
-});
-
-//login authentication
-app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-  const userAccess = await User.findOne({ email: username });
-
-  if (userAccess && userAccess.password === md5(password)) {
-    res.render("secrets");
-  } else {
-    console.log("No match found");
-  }
-});
+app.post("/login", login);
 
 // Start the server
 app.listen(PORT, () => {
