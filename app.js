@@ -1,7 +1,13 @@
 import express from "express";
 import dotenv from "dotenv";
+import mongoose from "mongoose";
+import session from "express-session";
+import passport from "passport";
+import { setupPassport } from "./passport.js";
+import { login, register, submit } from "./routes.js";
+
+// import { User } from "./schema.js";
 dotenv.config();
-import { User } from "./schema.js";
 
 const PORT = process.env.PORT;
 const app = express();
@@ -11,49 +17,84 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.set("view engine", "ejs");
 
+// Create a session middleware
+const sessionMiddleware = session({
+  secret: process.env.SECRET,
+  resave: false,
+  saveUninitialized: false,
+});
+
+// Use the session middleware
+app.use(sessionMiddleware);
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
+
+mongoose.connect(process.env.MONGO_URI);
+
+setupPassport(passport);
+
 // Routes
 app.get("/", (req, res) => {
   res.render("home");
 });
+
+app.get(
+  "/auth/google",
+  passport.authenticate("google", { scope: ["profile"] })
+);
+
+app.get(
+  "/auth/google/secrets",
+  passport.authenticate("google", { failureRedirect: "/login" }),
+  function (req, res) {
+    // Successful authentication, redirect home.
+    res.redirect("/secrets");
+  }
+);
 
 app.get("/login", (req, res) => {
   res.render("login");
 });
 
 app.get("/register", (req, res) => {
-  res.render("register");
-});
-
-// Register a new user
-app.post("/register", async (req, res) => {
-  const newUser = new User({
-    email: req.body.username,
-    password: req.body.password,
+  res.render("register", {
+    message: "Enter New User",
   });
+});
 
-  const checkUser = await User.findOne({ email: req.body.username });
+import { User } from "./schema.js";
+app.get("/secrets", async (req, res) => {
+  if (req.isAuthenticated()) {
+    const foundSecret = await User.find({ secret: { $ne: null } });
 
-  if (checkUser) {
-    res.render("register", {
-      error: "Email is already in use",
-    });
+    res.render("secrets", { usersWithSecrets: foundSecret });
   } else {
-    await newUser.save();
-    res.render("secrets");
+    res.redirect("/login");
   }
 });
 
-//login authentication
-app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-  const userAccess = await User.findOne({ email: username });
-
-  if (userAccess && userAccess.password === password) {
-    res.render("secrets");
+app.get("/submit", (req, res) => {
+  if (req.isAuthenticated()) {
+    res.render("submit");
   } else {
-    console.log("No match found");
+    res.redirect("/login");
   }
 });
+
+app.get("/logout", (req, res) => {
+  req.logout(function (err) {
+    if (err) {
+      return next(err);
+    }
+    res.redirect("/");
+  });
+});
+
+app.post("/register", register);
+app.post("/login", login);
+app.post("/submit", submit);
 
 // Start the server
 app.listen(PORT, () => {
