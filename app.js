@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 import session from "express-session";
 import passport from "passport";
 import { setupPassport } from "./passport.js";
-import { login, register } from "./routes.js";
+import { login, register, submit } from "./routes.js";
 
 // import { User } from "./schema.js";
 dotenv.config();
@@ -64,9 +64,20 @@ app.get("/register", (req, res) => {
   });
 });
 
-app.get("/secrets", (req, res) => {
+import { User } from "./schema.js";
+app.get("/secrets", async (req, res) => {
   if (req.isAuthenticated()) {
-    res.render("secrets");
+    const foundSecret = await User.find({ secret: { $ne: null } });
+
+    res.render("secrets", { usersWithSecrets: foundSecret });
+  } else {
+    res.redirect("/login");
+  }
+});
+
+app.get("/submit", (req, res) => {
+  if (req.isAuthenticated()) {
+    res.render("submit");
   } else {
     res.redirect("/login");
   }
@@ -83,6 +94,7 @@ app.get("/logout", (req, res) => {
 
 app.post("/register", register);
 app.post("/login", login);
+app.post("/submit", submit);
 
 // Start the server
 app.listen(PORT, () => {

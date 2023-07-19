@@ -1,4 +1,5 @@
 import { User } from "./schema.js";
+import passport from "passport";
 
 const register = async (req, res) => {
   User.register(
@@ -34,4 +35,18 @@ const login = async (req, res) => {
   });
 };
 
-export { register, login };
+const submit = async (req, res) => {
+  const submittedSecret = req.body.secret;
+
+  const foundUser = await User.findById(req.user.id);
+
+  if (foundUser) {
+    foundUser.secret = submittedSecret;
+    await foundUser.save();
+    res.redirect("/secrets");
+  } else {
+    res.status(401).send("Unauthorized");
+  }
+};
+
+export { register, login, submit };

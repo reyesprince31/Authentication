@@ -4,6 +4,7 @@ import { User } from "./schema.js";
 export function setupPassport(passport) {
   // Configure Passport with the User model
   passport.use(User.createStrategy());
+
   passport.serializeUser(function (user, cb) {
     process.nextTick(function () {
       return cb(null, {
@@ -27,6 +28,7 @@ export function setupPassport(passport) {
         callbackURL: "http://localhost:3000/auth/google/secrets",
       },
       (accessToken, refreshToken, profile, cb) => {
+        // console.log(profile);
         User.findOrCreate({ googleID: profile.id }, (err, user) => {
           return cb(err, user);
         });
