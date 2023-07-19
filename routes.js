@@ -1,53 +1,37 @@
-import bcrypt from "bcrypt";
 import { User } from "./schema.js";
 
-const saltRounds = 10;
-
 const register = async (req, res) => {
-  const { username, password } = req.body;
-  const hash = await bcrypt.hash(password, saltRounds);
-  const newUser = new User({
-    email: username,
-    password: hash,
-  });
-
-  try {
-    const checkUser = await User.findOne({ email: username });
-
-    if (checkUser) {
-      res.render("register", {
-        message: "Email is already in use",
-      });
-    } else {
-      await newUser.save();
-      res.render("secrets");
+  User.register(
+    { username: req.body.username },
+    req.body.password,
+    (err, user) => {
+      if (err) {
+        console.log(err);
+        res.redirect("/register");
+      } else {
+        passport.authenticate("local")(req, res, () => {
+          res.redirect("/secrets");
+        });
+      }
     }
-  } catch (error) {
-    if (error.name === "ValidationError") {
-      res.render("register", {
-        message: error.errors.email[0],
-      });
-    } else {
-      console.error(error);
-      res.status(500).send("Something went wrong");
-    }
-  }
+  );
 };
 
 const login = async (req, res) => {
-  const { username, password } = req.body;
-  const userAccess = await User.findOne({ email: username });
+  const user = new User({
+    username: req.body.username,
+    password: req.body.password,
+  });
 
-  if (userAccess) {
-    const match = await bcrypt.compare(password, userAccess.password);
-    if (match) {
-      res.render("secrets");
+  req.login(user, function (err) {
+    if (err) {
+      console.log(err);
     } else {
-      res.status(401).send("Incorrect username or password");
+      passport.authenticate("local")(req, res, () => {
+        res.redirect("/secrets");
+      });
     }
-  } else {
-    res.status(404).send("User not found");
-  }
+  });
 };
 
 export { register, login };

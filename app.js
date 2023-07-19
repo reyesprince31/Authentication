@@ -1,9 +1,13 @@
 import express from "express";
 import dotenv from "dotenv";
-dotenv.config();
+import mongoose from "mongoose";
 import session from "express-session";
 import passport from "passport";
-import { User } from "./schema.js";
+import { setupPassport } from "./passport.js";
+import { login, register } from "./routes.js";
+
+// import { User } from "./schema.js";
+dotenv.config();
 
 const PORT = process.env.PORT;
 const app = express();
@@ -27,17 +31,28 @@ app.use(sessionMiddleware);
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Configure Passport with the User model
-passport.use(User.createStrategy());
+mongoose.connect(process.env.MONGO_URI);
 
-// Serialize and deserialize users
-passport.serializeUser(User.serializeUser());
-passport.deserializeUser(User.deserializeUser());
+setupPassport(passport);
 
 // Routes
 app.get("/", (req, res) => {
   res.render("home");
 });
+
+app.get(
+  "/auth/google",
+  passport.authenticate("google", { scope: ["profile"] })
+);
+
+app.get(
+  "/auth/google/secrets",
+  passport.authenticate("google", { failureRedirect: "/login" }),
+  function (req, res) {
+    // Successful authentication, redirect home.
+    res.redirect("/secrets");
+  }
+);
 
 app.get("/login", (req, res) => {
   res.render("login");
@@ -66,39 +81,8 @@ app.get("/logout", (req, res) => {
   });
 });
 
-app.post("/register", (req, res) => {
-  User.register(
-    { username: req.body.username },
-    req.body.password,
-    (err, user) => {
-      if (err) {
-        console.log(err);
-        res.redirect("/register");
-      } else {
-        passport.authenticate("local")(req, res, () => {
-          res.redirect("/secrets");
-        });
-      }
-    }
-  );
-});
-
-app.post("/login", (req, res) => {
-  const user = new User({
-    username: req.body.username,
-    password: req.body.password,
-  });
-
-  req.login(user, function (err) {
-    if (err) {
-      console.log(err);
-    } else {
-      passport.authenticate("local")(req, res, () => {
-        res.redirect("/secrets");
-      });
-    }
-  });
-});
+app.post("/register", register);
+app.post("/login", login);
 
 // Start the server
 app.listen(PORT, () => {
